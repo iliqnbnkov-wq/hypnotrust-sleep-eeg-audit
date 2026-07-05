@@ -1,0 +1,10 @@
+{
+  "subject": 9,
+  "n_bins": 10,
+  "total_epochs": 1132,
+  "uncalibrated_accuracy": 0.8312720848056537,
+  "calibrated_accuracy": 0.8330388692579506,
+  "labels_changed_by_calibration": 39,
+  "stage_with_worst_uncalibrated_ece_maxconfidence": "N1",
+  "stage_with_worst_calibrated_ece_maxconfidence": "N1"
+}

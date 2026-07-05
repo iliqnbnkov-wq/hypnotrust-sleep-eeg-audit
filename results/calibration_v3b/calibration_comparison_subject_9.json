@@ -1,0 +1,213 @@
+{
+  "calibrated": {
+    "accuracy": 0.8330388692579506,
+    "brier_score": 0.2618745901078219,
+    "ece": 0.04107786337260254,
+    "kappa": 0.7459194725241316,
+    "log_loss": 0.6055176085694588,
+    "macro_f1": 0.7810410562509008,
+    "mean_confidence_correct": 0.8682339366194629,
+    "mean_confidence_incorrect": 0.711410560849489,
+    "mean_entropy_correct": 0.21895063316502986,
+    "mean_entropy_incorrect": 0.40593615743199735
+  },
+  "n_labels_changed": 39,
+  "selective_prediction": {
+    "calibrated": [
+      {
+        "Accuracy": 0.8330388692579506,
+        "Actual_Coverage": 1.0,
+        "Confidence_Threshold": 0.2698966505298398,
+        "Mean_Confidence": 0.8420505284741228,
+        "Rejected_Count": 0,
+        "Requested_Coverage": 1.0,
+        "Retained_Count": 1132,
+        "Risk": 0.16696113074204944
+      },
+      {
+        "Accuracy": 0.8466542750929368,
+        "Actual_Coverage": 0.950530035335689,
+        "Confidence_Threshold": 0.5035708698988964,
+        "Mean_Confidence": 0.8637589874976549,
+        "Rejected_Count": 56,
+        "Requested_Coverage": 0.95,
+        "Retained_Count": 1076,
+        "Risk": 0.15334572490706322
+      },
+      {
+        "Accuracy": 0.8606476938174681,
+        "Actual_Coverage": 0.9001766784452296,
+        "Confidence_Threshold": 0.555033784618882,
+        "Mean_Confidence": 0.8824712974719819,
+        "Rejected_Count": 113,
+        "Requested_Coverage": 0.9,
+        "Retained_Count": 1019,
+        "Risk": 0.13935230618253192
+      },
+      {
+        "Accuracy": 0.8764278296988577,
+        "Actual_Coverage": 0.8507067137809188,
+        "Confidence_Threshold": 0.6275931341643405,
+        "Mean_Confidence": 0.8994810138857303,
+        "Rejected_Count": 169,
+        "Requested_Coverage": 0.85,
+        "Retained_Count": 963,
+        "Risk": 0.12357217030114231
+      },
+      {
+        "Accuracy": 0.8863134657836644,
+        "Actual_Coverage": 0.8003533568904594,
+        "Confidence_Threshold": 0.6859838989279098,
+        "Mean_Confidence": 0.9146852584684773,
+        "Rejected_Count": 226,
+        "Requested_Coverage": 0.8,
+        "Retained_Count": 906,
+        "Risk": 0.11368653421633557
+      },
+      {
+        "Accuracy": 0.901060070671378,
+        "Actual_Coverage": 0.75,
+        "Confidence_Threshold": 0.7313367924410334,
+        "Mean_Confidence": 0.928654760450157,
+        "Rejected_Count": 283,
+        "Requested_Coverage": 0.75,
+        "Retained_Count": 849,
+        "Risk": 0.09893992932862195
+      },
+      {
+        "Accuracy": 0.9092055485498108,
+        "Actual_Coverage": 0.700530035335689,
+        "Confidence_Threshold": 0.7796585348916376,
+        "Mean_Confidence": 0.9410199731645065,
+        "Rejected_Count": 339,
+        "Requested_Coverage": 0.7,
+        "Retained_Count": 793,
+        "Risk": 0.09079445145018916
+      },
+      {
+        "Accuracy": 0.9176470588235294,
+        "Actual_Coverage": 0.6007067137809188,
+        "Confidence_Threshold": 0.8620718430806799,
+        "Mean_Confidence": 0.9607635962179536,
+        "Rejected_Count": 452,
+        "Requested_Coverage": 0.6,
+        "Retained_Count": 680,
+        "Risk": 0.08235294117647063
+      },
+      {
+        "Accuracy": 0.9257950530035336,
+        "Actual_Coverage": 0.5,
+        "Confidence_Threshold": 0.9077035718129637,
+        "Mean_Confidence": 0.9755607035810241,
+        "Rejected_Count": 566,
+        "Requested_Coverage": 0.5,
+        "Retained_Count": 566,
+        "Risk": 0.0742049469964664
+      }
+    ],
+    "uncalibrated": [
+      {
+        "Accuracy": 0.8312720848056537,
+        "Actual_Coverage": 1.0,
+        "Confidence_Threshold": 0.24790629757804172,
+        "Mean_Confidence": 0.7478491379402683,
+        "Rejected_Count": 0,
+        "Requested_Coverage": 1.0,
+        "Retained_Count": 1132,
+        "Risk": 0.16872791519434627
+      },
+      {
+        "Accuracy": 0.8475836431226765,
+        "Actual_Coverage": 0.950530035335689,
+        "Confidence_Threshold": 0.41090341583433576,
+        "Mean_Confidence": 0.7678423297497393,
+        "Rejected_Count": 56,
+        "Requested_Coverage": 0.95,
+        "Retained_Count": 1076,
+        "Risk": 0.15241635687732347
+      },
+      {
+        "Accuracy": 0.8596663395485771,
+        "Actual_Coverage": 0.9001766784452296,
+        "Confidence_Threshold": 0.45502023196793234,
+        "Mean_Confidence": 0.7865787352409814,
+        "Rejected_Count": 113,
+        "Requested_Coverage": 0.9,
+        "Retained_Count": 1019,
+        "Risk": 0.14033366045142293
+      },
+      {
+        "Accuracy": 0.8733125649013499,
+        "Actual_Coverage": 0.8507067137809188,
+        "Confidence_Threshold": 0.5050452862403605,
+        "Mean_Confidence": 0.8044964178470992,
+        "Rejected_Count": 169,
+        "Requested_Coverage": 0.85,
+        "Retained_Count": 963,
+        "Risk": 0.1266874350986501
+      },
+      {
+        "Accuracy": 0.8841059602649006,
+        "Actual_Coverage": 0.8003533568904594,
+        "Confidence_Threshold": 0.5513894044724266,
+        "Mean_Confidence": 0.8220454230837837,
+        "Rejected_Count": 226,
+        "Requested_Coverage": 0.8,
+        "Retained_Count": 906,
+        "Risk": 0.11589403973509937
+      },
+      {
+        "Accuracy": 0.8939929328621908,
+        "Actual_Coverage": 0.75,
+        "Confidence_Threshold": 0.598080023598045,
+        "Mean_Confidence": 0.8387604896131358,
+        "Rejected_Count": 283,
+        "Requested_Coverage": 0.75,
+        "Retained_Count": 849,
+        "Risk": 0.10600706713780916
+      },
+      {
+        "Accuracy": 0.9041614123581336,
+        "Actual_Coverage": 0.700530035335689,
+        "Confidence_Threshold": 0.6372934441631488,
+        "Mean_Confidence": 0.854494395177939,
+        "Rejected_Count": 339,
+        "Requested_Coverage": 0.7,
+        "Retained_Count": 793,
+        "Risk": 0.09583858764186637
+      },
+      {
+        "Accuracy": 0.9235294117647059,
+        "Actual_Coverage": 0.6007067137809188,
+        "Confidence_Threshold": 0.715661784258981,
+        "Mean_Confidence": 0.8844328861846641,
+        "Rejected_Count": 452,
+        "Requested_Coverage": 0.6,
+        "Retained_Count": 680,
+        "Risk": 0.07647058823529407
+      },
+      {
+        "Accuracy": 0.9469964664310954,
+        "Actual_Coverage": 0.5,
+        "Confidence_Threshold": 0.7926541586449487,
+        "Mean_Confidence": 0.9107029164285865,
+        "Rejected_Count": 566,
+        "Requested_Coverage": 0.5,
+        "Retained_Count": 566,
+        "Risk": 0.05300353356890464
+      }
+    ]
+  },
+  "uncalibrated": {
+    "accuracy": 0.8312720848056537,
+    "brier_score": 0.2732566834783881,
+    "ece": 0.08342294686538546,
+    "kappa": 0.7446584376136691,
+    "log_loss": 0.5365446837755418,
+    "macro_f1": 0.7860476439985151,
+    "mean_confidence_correct": 0.7781716546899082,
+    "mean_confidence_incorrect": 0.5984591470428269,
+    "mean_entropy_correct": 0.3963031957982355,
+    "mean_entropy_incorrect": 0.5924680766510206
+  }
+}
