@@ -105,9 +105,7 @@ After cloning the repository:
 
 ```powershell
 cd hypnotrust-sleep-eeg-audit
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\run_app.ps1
 ```
 
@@ -128,6 +126,15 @@ pip install -r requirements.txt
 $env:PYTHONPATH = "$PWD\src"
 .\run_app.ps1
 ```
+
+## Run the app
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\run_app.ps1
+```
+
+`run_app.ps1` creates/uses the local `.venv`, installs dependencies from `requirements.txt` if Streamlit is missing, sets `PYTHONPATH`, and launches the Streamlit dashboard.
 
 ## Run tests
 
