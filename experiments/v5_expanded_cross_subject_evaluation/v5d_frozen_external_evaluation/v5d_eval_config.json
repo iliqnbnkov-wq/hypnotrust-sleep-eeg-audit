@@ -1,0 +1,85 @@
+{
+  "experiment": "v5d_frozen_external_evaluation",
+  "completed_at": "2026-07-03T17:18:30",
+  "training_subjects": [
+    "SC400",
+    "SC401",
+    "SC402",
+    "SC403",
+    "SC404",
+    "SC405",
+    "SC406",
+    "SC407",
+    "SC408"
+  ],
+  "historical_locked_test_subjects": [
+    "SC409"
+  ],
+  "external_holdout_subjects": [
+    "SC410",
+    "SC411",
+    "SC412",
+    "SC413",
+    "SC414",
+    "SC415",
+    "SC416",
+    "SC417",
+    "SC418",
+    "SC419"
+  ],
+  "training_epochs": 8781,
+  "historical_subject9_epochs": 1132,
+  "external_holdout_epochs": 10713,
+  "model": {
+    "type": "RandomForestClassifier",
+    "n_estimators": 300,
+    "random_state": 42,
+    "class_weight": "balanced_subsample",
+    "n_jobs": -1
+  },
+  "feature_set": {
+    "base_features": 13,
+    "temporal_radius": 2,
+    "temporal_features": 65,
+    "eeg_channels": [
+      "EEG Fpz-Cz",
+      "EEG Pz-Oz"
+    ],
+    "eog_channel": "EOG horizontal",
+    "bands": {
+      "delta": [
+        0.5,
+        4.0
+      ],
+      "theta": [
+        4.0,
+        8.0
+      ],
+      "alpha": [
+        8.0,
+        12.0
+      ],
+      "sigma": [
+        12.0,
+        15.0
+      ],
+      "beta": [
+        15.0,
+        30.0
+      ]
+    }
+  },
+  "subject_9_used_for_training": false,
+  "subject_9_used_for_tuning": false,
+  "external_subjects_used_for_training": false,
+  "external_subjects_used_for_tuning": false,
+  "locked_results_modified": false,
+  "reference_temporal_v2_subject9_accuracy": 0.8313,
+  "v5d_historical_subject9_accuracy": 0.8127208480565371,
+  "reference_delta": 0.018579151943462935,
+  "reference_status": "PASS_CLOSE_TO_LOCKED_TEMPORAL_V2_REFERENCE",
+  "external_pooled_accuracy": 0.7752263604965929,
+  "external_pooled_macro_f1": 0.6946630195441662,
+  "external_pooled_kappa": 0.6691793755932083,
+  "external_pooled_ece": 0.06338529512430384
+}

@@ -1,0 +1,39 @@
+﻿# Python / environment
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local backups / checkpoints
+checkpoints/
+_archive/
+*.bak*
+*backup*
+*.disabled
+BROKEN_*
+
+# Large/raw sleep data
+*.edf
+*.EDF
+*.npy
+*.npz
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Private/local files
+.env
+*.log
