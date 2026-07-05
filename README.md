@@ -109,13 +109,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\run_app.ps1
 ```
 
-The launch script automatically sets:
+The launch script creates a local `.venv` if needed, installs packages from `requirements.txt`, sets `PYTHONPATH`, and starts the Streamlit app.
+
+To run the test suite:
 
 ```powershell
-$env:PYTHONPATH = "$RepoRoot;$RepoRoot\src"
+.\run_tests.ps1
 ```
-
-This is required because the Streamlit app uses both the repository root and `src/` modules.
 
 ## Run the app
 
