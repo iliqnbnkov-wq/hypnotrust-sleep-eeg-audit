@@ -1,0 +1,56 @@
+{
+  "baseline_subject_9_metrics": {
+    "accuracy": 0.7942,
+    "balanced_accuracy": 0.7551,
+    "kappa": 0.692,
+    "macro_f1": 0.7132,
+    "weighted_f1": 0.798
+  },
+  "cross_validation_mean": {
+    "accuracy": 0.8272449161564804,
+    "balanced_accuracy": 0.7839636558578175,
+    "kappa": 0.7622016769168524,
+    "macro_f1": 0.7811645885991721,
+    "weighted_f1": 0.8263706154047897
+  },
+  "cross_validation_standard_deviation": {
+    "accuracy": 0.04329471169010682,
+    "balanced_accuracy": 0.032388888178702405,
+    "kappa": 0.061157008581287566,
+    "macro_f1": 0.04377772280626829,
+    "weighted_f1": 0.04165044137446317
+  },
+  "development_epochs": 8781,
+  "feature_count": 65,
+  "final_test_epochs": 1132,
+  "final_test_subject": 9,
+  "oof_metrics": {
+    "accuracy": 0.8324792164901492,
+    "balanced_accuracy": 0.7906699398509233,
+    "kappa": 0.7716322062521059,
+    "macro_f1": 0.7869808960689744,
+    "weighted_f1": 0.8302035689503529
+  },
+  "subject_9_improvement": {
+    "accuracy": 0.037072084805653716,
+    "balanced_accuracy": 0.06704838682544456,
+    "kappa": 0.05265843761366917,
+    "macro_f1": 0.07284764399851518,
+    "weighted_f1": 0.03435033574386803
+  },
+  "subject_9_metrics": {
+    "accuracy": 0.8312720848056537,
+    "balanced_accuracy": 0.8221483868254446,
+    "kappa": 0.7446584376136691,
+    "macro_f1": 0.7860476439985151,
+    "weighted_f1": 0.8323503357438681
+  },
+  "temporal_offsets": [
+    -2,
+    -1,
+    0,
+    1,
+    2
+  ],
+  "version": "temporal_v2"
+}
