@@ -43,6 +43,15 @@ $env:PYTHONPATH = "$PWD\src"
 python -m unittest discover -s tests -p "test*.py"
 ```
 
+
+## Documentation
+
+- [Project positioning](docs/project_positioning.md)
+- [Related work](docs/related_work.md)
+- [Evaluation protocol](docs/evaluation_protocol.md)
+- [Model card summary](docs/model_card.md)
+
 ## Status
 
 Research / educational proof-of-concept.
+
