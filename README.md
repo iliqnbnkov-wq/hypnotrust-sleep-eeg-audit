@@ -99,6 +99,26 @@ experiments/
 - [Evaluation protocol](docs/evaluation_protocol.md)
 - [Model card summary](docs/model_card.md)
 
+## Quick start on Windows
+
+After cloning the repository:
+
+```powershell
+cd hypnotrust-sleep-eeg-audit
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+.\run_app.ps1
+```
+
+The launch script automatically sets:
+
+```powershell
+$env:PYTHONPATH = "$RepoRoot;$RepoRoot\src"
+```
+
+This is required because the Streamlit app uses both the repository root and `src/` modules.
+
 ## Run the app
 
 ```powershell
@@ -106,7 +126,7 @@ python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 $env:PYTHONPATH = "$PWD\src"
-python -m streamlit run .\app\app.py
+.\run_app.ps1
 ```
 
 ## Run tests

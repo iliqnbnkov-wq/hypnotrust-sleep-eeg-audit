@@ -1,6 +1,6 @@
 ﻿# app/app.py
 """
-HypnoTrust вЂ” Research Prototype Dashboard
+HypnoTrust - Research Prototype Dashboard
 Local Streamlit application for sleep-stage classification and uncertainty review.
 
 Run from project root:
@@ -27,18 +27,18 @@ import streamlit as st
 warnings.filterwarnings("ignore")
 
 # ---------------------------------------------------------------------------
-# Page config вЂ” must be the first Streamlit call
+# Page config - must be the first Streamlit call
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
     page_title="HypnoTrust",
-    page_icon="рџ”¬",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
-# Core imports вЂ” hard failure: app only runs inside project environment
+# Core imports - hard failure: app only runs inside project environment
 # ---------------------------------------------------------------------------
 
 try:
@@ -77,7 +77,7 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# Load pipeline config once вЂ” drives feature schema everywhere
+# Load pipeline config once - drives feature schema everywhere
 # ---------------------------------------------------------------------------
 
 @st.cache_resource(show_spinner=False)
@@ -319,7 +319,7 @@ def _disclaimer() -> None:
         'border-left:3px solid #f78716;border-radius:8px;'
         'padding:0.55rem 1rem;margin-bottom:1rem;">'
         '<span style="color:#f78716;font-weight:600;font-size:0.79rem;">'
-        'вљ  RESEARCH PROTOTYPE</span>'
+        'WARNING:  RESEARCH PROTOTYPE</span>'
         '<span style="color:#8b949e;font-size:0.77rem;margin-left:0.6rem;">'
         'Not for clinical use. Results do not constitute medical diagnosis '
         'and must be reviewed by a qualified sleep specialist.</span></div>',
@@ -329,10 +329,10 @@ def _disclaimer() -> None:
 
 def _mode_badge(mode: str) -> None:
     palette = {
-        "Demo": ("#388bfd", "рџЋЇ  DEMO"),
-        "Research": ("#a371f7", "рџ”¬  RESEARCH"),
-        "User": ("#3fb950", "рџ‘¤  USER"),
-        "EDF Upload": ("#f78716", "рџ§Є  EDF"),
+        "Demo": ("#388bfd", "DEMO"),
+        "Research": ("#a371f7", "  RESEARCH"),
+        "User": ("#3fb950", "USER"),
+        "EDF Upload": ("#f78716", "  EDF"),
     }
 
     color, label = palette.get(mode, ("#8b949e", mode.upper()))
@@ -483,10 +483,10 @@ def _resolve_feature_df(
         "Unrecognised CSV schema.\n\n"
         f"Expected one of:\n"
         f"- Temporal v2 CSV with {len(_TEMPORAL_FEATURE_COLUMNS)} feature columns "
-        f"such as `{_TEMPORAL_FEATURE_COLUMNS[0]}` вЂ¦ "
+        f"such as `{_TEMPORAL_FEATURE_COLUMNS[0]}` ... "
         f"`{_TEMPORAL_FEATURE_COLUMNS[-1]}`.\n"
         f"- Baseline CSV with 13 baseline feature columns such as "
-        f"`{_BASELINE_FEATURE_COLUMNS[0]}` вЂ¦ "
+        f"`{_BASELINE_FEATURE_COLUMNS[0]}` ... "
         f"`{_BASELINE_FEATURE_COLUMNS[-1]}` plus Subject, Recording, Epoch. "
         f"Stage is optional for prediction but required for metrics.\n\n"
         f"Missing temporal columns, first 5: {missing_temporal[:5]}\n"
@@ -665,7 +665,7 @@ def _run_pipeline(
     """
 
     try:
-        with st.spinner("Running prediction pipelineвЂ¦"):
+        with st.spinner("Running prediction pipeline..."):
             result = run_feature_dataframe_pipeline(
                 feature_df=feature_df,
                 labels=labels,
@@ -1144,7 +1144,7 @@ def _render_results(result, queue, mode: str) -> None:
             **Stage distribution** СЃСЂР°РІРЅСЏРІР° true Рё predicted Р±СЂРѕР№ РµРїРѕС…Рё Р·Р° Wake, N1, N2, N3 Рё REM. 
             РђРєРѕ predicted N2 Рµ РїСЂРµРєР°Р»РµРЅРѕ РІРёСЃРѕРє, С‚РѕРІР° РјРѕР¶Рµ РґР° РїРѕРєР°Р·РІР° N2-attractor behavior.
 
-            **Error-pair chart** РїРѕРєР°Р·РІР° РєР°Рє С‚РѕС‡РЅРѕ РіСЂРµС€Рё РјРѕРґРµР»СЉС‚, РЅР°РїСЂРёРјРµСЂ REM в†’ N2 РёР»Рё N3 в†’ N2.
+            **Error-pair chart** РїРѕРєР°Р·РІР° РєР°Рє С‚РѕС‡РЅРѕ РіСЂРµС€Рё РјРѕРґРµР»СЉС‚, РЅР°РїСЂРёРјРµСЂ REM -> N2 РёР»Рё N3 -> N2.
 
             **Subject comparison** РїРѕРєР°Р·РІР° РґР°Р»Рё РїРѕРІРµРґРµРЅРёРµС‚Рѕ РЅР° РјРѕРґРµР»Р° Рµ СЃС‚Р°Р±РёР»РЅРѕ РјРµР¶РґСѓ СЂР°Р·Р»РёС‡РЅРё subjects.
             """
@@ -1328,7 +1328,7 @@ def _render_results(result, queue, mode: str) -> None:
             )
         else:
             st.info(
-                "рџ“Љ No verified **Stage** column found. "
+                " No verified **Stage** column found. "
                 "Accuracy, F1, kappa, ECE, and confusion matrix require "
                 "ground-truth labels."
             )
@@ -1376,7 +1376,7 @@ def _render_results(result, queue, mode: str) -> None:
         hide_index=True,
     )
 
-    with st.expander("рџ“‹ Full prediction table", expanded=False):
+    with st.expander(" Full prediction table", expanded=False):
         full_display = uncertainty_df.copy()
 
         if "predicted_stage" in full_display.columns:
@@ -1447,7 +1447,7 @@ def _render_sidebar() -> tuple[str, dict]:
     with st.sidebar:
         st.markdown(
             '<div style="text-align:center;padding:0.8rem 0 0.3rem;">'
-            '<span style="font-size:1.6rem;">рџ”¬</span>'
+            '<span style="font-size:1.6rem;"></span>'
             '<div style="font-size:1.1rem;font-weight:700;color:#e6edf3;'
             'margin-top:0.2rem;">HypnoTrust</div>'
             '<div style="font-size:0.7rem;color:#6e7681;letter-spacing:0.06em;">'
@@ -1552,7 +1552,7 @@ def _run_edf_upload(params: dict) -> None:
     st.markdown(
         '<div style="color:#8b949e;font-size:0.81rem;margin-bottom:1rem;">'
         'Upload a PSG EDF file and run it through the real HypnoTrust pipeline: '
-        'MNE EDF reader в†’ feature extraction в†’ Temporal v2 model в†’ uncertainty в†’ review queue. '
+        'MNE EDF reader -> feature extraction -> Temporal v2 model -> uncertainty -> review queue. '
         '<b style="color:#f78716;">Experimental research mode only.</b></div>',
         unsafe_allow_html=True,
     )
@@ -1580,7 +1580,7 @@ def _run_edf_upload(params: dict) -> None:
 
     upload_signature = f"{psg_file.name}:{psg_file.size}"
 
-    if st.button("в–¶  Run EDF Pipeline", type="primary"):
+    if st.button("  Run EDF Pipeline", type="primary"):
         psg_path = None
         hypnogram_path = None
 
@@ -1589,7 +1589,7 @@ def _run_edf_upload(params: dict) -> None:
 
             psg_path = _save_uploaded_edf(psg_file, ".edf")
 
-            with st.spinner("Reading PSG EDF with MNEвЂ¦"):
+            with st.spinner("Reading PSG EDF with MNE..."):
                 raw = mne.io.read_raw_edf(
                     psg_path,
                     preload=False,
@@ -1611,7 +1611,7 @@ def _run_edf_upload(params: dict) -> None:
                     )
                     annotations = None
 
-            with st.spinner("Running full EDF pipelineвЂ¦"):
+            with st.spinner("Running full EDF pipeline..."):
                 result = run_full_pipeline(
                     raw,
                     annotations=annotations,
@@ -1674,7 +1674,7 @@ def _run_demo(params: dict) -> None:
         unsafe_allow_html=True,
     )
 
-    if st.button("в–¶  Generate Demo", type="primary"):
+    if st.button("  Generate Demo", type="primary"):
         feature_df, _template_labels = _make_demo_feature_df(
             profile_name=params["profile"],
             n_epochs=params["n_epochs"],
@@ -1738,11 +1738,11 @@ def _run_user(params: dict) -> None:
     st.markdown(
         f'<div style="color:#8b949e;font-size:0.81rem;margin-bottom:1rem;">'
         f'Upload a feature CSV. Accepted formats:<br>'
-        f'&nbsp;вЂў <b style="color:#e6edf3;">Temporal v2 CSV</b>: '
+        f'&nbsp;- <b style="color:#e6edf3;">Temporal v2 CSV</b>: '
         f'{n_features} feature columns '
-        f'(e.g. <code>{_TEMPORAL_FEATURE_COLUMNS[0]}</code> вЂ¦ '
+        f'(e.g. <code>{_TEMPORAL_FEATURE_COLUMNS[0]}</code> ... '
         f'<code>{_TEMPORAL_FEATURE_COLUMNS[-1]}</code>)<br>'
-        f'&nbsp;вЂў <b style="color:#e6edf3;">Baseline CSV</b>: '
+        f'&nbsp;- <b style="color:#e6edf3;">Baseline CSV</b>: '
         f'13 feature columns + Subject, Recording, Epoch '
         f'(Stage optional; auto-expanded to {n_features} temporal features)<br>'
         f'Accuracy and evaluation metrics are not shown in this mode.</div>',
@@ -1773,12 +1773,12 @@ def _run_user(params: dict) -> None:
         return
 
     st.success(
-        f"вњ“ CSV schema detected: `{schema_name}`. "
+        f" CSV schema detected: `{schema_name}`. "
         f"Rows: {len(feature_df)}. "
         f"Features: {len(_TEMPORAL_FEATURE_COLUMNS)}."
     )
 
-    if st.button("в–¶  Run Prediction", type="primary"):
+    if st.button("  Run Prediction", type="primary"):
         result, queue = _run_pipeline(
             feature_df=feature_df,
             labels=None,
@@ -1842,14 +1842,14 @@ def _run_research(params: dict) -> None:
         return
 
     st.success(
-        f"вњ“ CSV schema detected: `{schema_name}`. "
+        f" CSV schema detected: `{schema_name}`. "
         f"Rows: {len(feature_df)}. "
         f"Features: {len(_TEMPORAL_FEATURE_COLUMNS)}."
     )
 
     if labels is not None:
         st.success(
-            f"вњ“ Verified Stage labels detected "
+            f" Verified Stage labels detected "
             f"({len(set(labels))} classes, {len(labels)} epochs). "
             f"Metrics unlocked."
         )
@@ -1859,7 +1859,7 @@ def _run_research(params: dict) -> None:
             "Showing predictions and uncertainty only."
         )
 
-    if st.button("в–¶  Run Analysis", type="primary"):
+    if st.button("  Run Analysis", type="primary"):
         result, queue = _run_pipeline(
             feature_df=feature_df,
             labels=labels,
@@ -1891,7 +1891,7 @@ def main() -> None:
     st.markdown(
         '<div style="padding:1.1rem 0 0.3rem;">'
         '<div style="display:flex;align-items:center;gap:0.8rem;">'
-        '<span style="font-size:2rem;">рџ”¬</span>'
+        '<span style="font-size:2rem;"></span>'
         '<div>'
         '<div style="font-size:1.45rem;font-weight:700;color:#e6edf3;'
         'line-height:1.1;">HypnoTrust</div>'
@@ -1939,7 +1939,7 @@ def main() -> None:
         st.markdown(
             """
             РўР°Р·Рё С‚Р°Р±Р»РёС†Р° РїРѕРєР°Р·РІР° РґР°Р»Рё РјРѕРґРµР»СЉС‚ СЃРµ РґСЉСЂР¶Рё СЃС‚Р°Р±РёР»РЅРѕ РїСЂРё СЂР°Р·Р»РёС‡РЅРё subjects. 
-            Р“РѕР»РµРјРё СЂР°Р·Р»РёРєРё РІ accuracy РёР»Рё confidence СЃР° РІР°Р¶РЅРё, Р·Р°С‰РѕС‚Рѕ sleep EEG РёРјР° СЃРёР»РЅР° РёРЅРґРёРІРёРґСѓР°Р»РЅР° РІР°СЂРёР°Р±РёР»РЅРѕСЃС‚. 
+            Р"РѕР»РµРјРё СЂР°Р·Р»РёРєРё РІ accuracy РёР»Рё confidence СЃР° РІР°Р¶РЅРё, Р·Р°С‰РѕС‚Рѕ sleep EEG РёРјР° СЃРёР»РЅР° РёРЅРґРёРІРёРґСѓР°Р»РЅР° РІР°СЂРёР°Р±РёР»РЅРѕСЃС‚. 
             `Top error pair` РїРѕРєР°Р·РІР° РЅР°Р№-С‡РµСЃС‚РёСЏ С‚РёРї РіСЂРµС€РєР° Р·Р° РґР°РґРµРЅ subject.
             """
         )
@@ -2052,7 +2052,7 @@ def main() -> None:
                 else:
                     _comparison_errors["error_pair"] = (
                         _comparison_errors["true_stage"].astype(str)
-                        + " в†’ "
+                        + " -> "
                         + _comparison_errors["pred_stage"].astype(str)
                     )
 
@@ -2137,7 +2137,7 @@ def main() -> None:
             """
             РЎСЂР°РІРЅСЏРІР°С‚ СЃРµ true Рё predicted counts Р·Р° Wake, N1, N2, N3 Рё REM. 
             РђРєРѕ РґР°РґРµРЅ predicted stage Рµ Р·РЅР°С‡РёС‚РµР»РЅРѕ РїРѕ-РІРёСЃРѕРє РѕС‚ true stage, РјРѕРґРµР»СЉС‚ РјРѕР¶Рµ РґР° РёРјР° bias РєСЉРј С‚РѕР·Рё РєР»Р°СЃ. 
-            Р’ С‚РѕР·Рё РїСЂРѕРµРєС‚ РѕСЃРѕР±РµРЅРѕ РІР°Р¶РµРЅ Рµ N2-attractor РµС„РµРєС‚СЉС‚.
+            Р' С‚РѕР·Рё РїСЂРѕРµРєС‚ РѕСЃРѕР±РµРЅРѕ РІР°Р¶РµРЅ Рµ N2-attractor РµС„РµРєС‚СЉС‚.
             """
         )
 
@@ -2277,7 +2277,7 @@ def main() -> None:
         st.markdown(
             """
             Error-pair chart РїРѕРєР°Р·РІР° РєР°Рє С‚РѕС‡РЅРѕ РіСЂРµС€Рё РјРѕРґРµР»СЉС‚. 
-            РџСЂРёРјРµСЂ: REM в†’ N2 РѕР·РЅР°С‡Р°РІР°, С‡Рµ РёСЃС‚РёРЅСЃРєРёСЏС‚ stage Рµ REM, РЅРѕ РјРѕРґРµР»СЉС‚ Рµ РїСЂРµРґСЃРєР°Р·Р°Р» N2. 
+            РџСЂРёРјРµСЂ: REM -> N2 РѕР·РЅР°С‡Р°РІР°, С‡Рµ РёСЃС‚РёРЅСЃРєРёСЏС‚ stage Рµ REM, РЅРѕ РјРѕРґРµР»СЉС‚ Рµ РїСЂРµРґСЃРєР°Р·Р°Р» N2. 
             РўРѕРІР° Рµ РїРѕ-РёРЅС„РѕСЂРјР°С‚РёРІРЅРѕ РѕС‚ СЃР°РјРѕ accuracy, Р·Р°С‰РѕС‚Рѕ РїРѕРєР°Р·РІР° failure modes.
             """
         )
@@ -2345,7 +2345,7 @@ def main() -> None:
                 else:
                     _error_pair_source["error_pair"] = (
                         _error_pair_source["true_stage"].astype(str)
-                        + " в†’ "
+                        + " -> "
                         + _error_pair_source["pred_stage"].astype(str)
                     )
 
