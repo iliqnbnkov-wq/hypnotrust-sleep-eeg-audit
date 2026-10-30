@@ -1,0 +1,50 @@
+﻿version: "baseline_v1"
+
+sampling_frequency: 100.0
+epoch_duration_seconds: 30.0
+wake_trim_minutes: 30.0
+
+filters:
+  eeg_low: 0.5
+  eeg_high: 40.0
+  eog_low: 0.3
+  eog_high: 15.0
+
+psd:
+  fmin: 0.5
+  fmax: 30.0
+  n_fft: 400
+  n_per_seg: 400
+  n_overlap: 200
+
+frequency_bands:
+  Delta: [0.5, 4.0]
+  Theta: [4.0, 8.0]
+  Alpha: [8.0, 12.0]
+  Sigma: [12.0, 16.0]
+  Beta: [16.0, 30.0]
+
+eog:
+  total_frequency_range: [0.3, 15.0]
+  low_frequency_range: [0.3, 2.0]
+  lower_percentile: 5
+  upper_percentile: 95
+
+model:
+  type: "random_forest"
+  n_estimators: 500
+  max_depth: 12
+  min_samples_leaf: 3
+  class_weight: "balanced_subsample"
+  random_state: 42
+  n_jobs: -1
+
+cross_validation:
+  type: "stratified_group_k_fold"
+  n_splits: 5
+  shuffle: true
+  random_state: 42
+
+subjects:
+  development: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+  final_test: 9
