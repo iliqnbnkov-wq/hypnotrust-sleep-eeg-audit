@@ -1,39 +1,120 @@
-﻿# Python / environment
+# ==============================================================================
+# HypnoTrust .gitignore
+# Scientific Python / Streamlit Sleep EEG Research Project
+# ==============================================================================
+
+# --- Python & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# --- Virtual Environments ---
 .venv/
 venv/
 env/
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
+ENV/
+env.bak/
+venv.bak/
+
+# --- Testing & Quality Assurance ---
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+.tox/
 
-# Jupyter
+# --- Jupyter Notebooks & Duplicates ---
 .ipynb_checkpoints/
+*-checkpoint.ipynb
+* - Копие.ipynb
+* - Copy.ipynb
+*Копие*
+*.ipynb.ipynb
+eeg.ipynb
 
-# Local backups / checkpoints
-checkpoints/
-_archive/
-*.bak*
-*backup*
-*.disabled
-BROKEN_*
+# --- Local Configuration, Secrets & Credentials ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+*.secret
+credentials.json
+token.json
 
-# Large/raw sleep data
+# --- Operating System & IDEs ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Raw Biomedical Data (Protected Research Data) ---
 *.edf
 *.EDF
+mne_data/
+test_files/sleep_edf_real/
+test_files/hypnotrust_test_psg.edf
+sleep_features/
+
+# --- Raw / Cached Numpy Arrays ---
 *.npy
 *.npz
 
-# OS / editor
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# --- Checkpoints, Crash Dumps & Backups ---
+checkpoints/
+_archive/
+*.bak
+*.bak*
+*.backup
+*backup*
+*.broken
+*BROKEN*
+BROKEN_*
 
-# Private/local files
-.env
+# --- Temporary Logs, Debug Dumps & File Listings ---
 *.log
+python_error.txt
+run_err.txt
+run_out.txt
+artifact_check.txt
+calibration_test_failures.txt
+debug_*.txt
+v5d_file_listing.txt
+
+# --- Compressed Archives & Data Bundles ---
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# --- Personal University Thesis & Defense Materials ---
+Доклад и защита/
+*.pptx
+*.docx
+
+# --- Large Binary Models (.joblib) ---
+*.joblib
+# Whitelist active runtime model artifacts required by the application
+!results/temporal_v2/sleep_stage_random_forest_temporal_v2.joblib
+!results/calibration_v3b/calibrator_v3b.joblib
+
+sleep_eeg_multimodal_features_subject_0.csv
+sleep_features_subject_0_corrected.csv
+sleep_features_subject_0_recording_1.csv
+sleep_features_subject_1_recording_1.csv
+sleep_features_subjects_0_to_9.csv
+final_predictions_subject_9.csv
+final_test_subject_9_stage_report.csv
+group_cross_validation_results.csv
+group_cross_validation_stage_report.csv
+group_cross_validation_summary.csv
