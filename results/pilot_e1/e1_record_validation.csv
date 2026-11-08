@@ -1,0 +1,2 @@
+hypnogram,psg,sample_rate_hz,psg_duration_s,annotation_end_s,annotation_orig_time,timebase_note
+SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,100.0,79500.0,86400.0,None,relative EDF onset; absolute synchronization not provable

@@ -82,18 +82,18 @@ def detect_transitions(
             continue
 
         # Check k-stability criterion
-        # Need k consecutive epochs in current stage before the boundary
-        if i >= k:
-            before_window = labels[i - k:i]
+        # Need k consecutive epochs in current stage before the boundary (including epoch i)
+        if i + 1 >= k:
+            before_window = labels[i - k + 1 : i + 1]
             if not all(label == current for label in before_window):
                 continue
         else:
             # Not enough epochs before the boundary
             continue
 
-        # Need k consecutive epochs in next stage after the boundary
-        if i + k + 1 <= n_epochs:
-            after_window = labels[i + 1:i + k + 1]
+        # Need k consecutive epochs in next stage after the boundary (epochs i+1 to i+k)
+        if i + 1 + k <= n_epochs:
+            after_window = labels[i + 1 : i + k + 1]
             if not all(label == next_label for label in after_window):
                 continue
         else:

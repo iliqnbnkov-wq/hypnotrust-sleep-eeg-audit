@@ -1694,6 +1694,243 @@ def _render_sidebar() -> tuple[str, dict]:
     return mode, params
 
 
+def _find_sc4001_demo_paths() -> tuple[Path | None, Path | None]:
+    """Locate local SC4001 PSG and hypnogram EDF files for instant conference demonstration."""
+    candidates = [
+        Path(r"C:\Users\User\Documents\Uni\egg_project\test_files\sleep_edf_real\physionet-sleep-data"),
+        Path(os.environ.get("HYPNOTRUST_EDF_DIR", "")),
+        Path("test_files/sleep_edf_real/physionet-sleep-data"),
+        Path(r"C:\Users\User\Documents\egg_project\test_files\sleep_edf_real\physionet-sleep-data"),
+    ]
+    for d in candidates:
+        if not d or not d.exists():
+            continue
+        p = d / "SC4001E0-PSG.edf"
+        h = d / "SC4001EC-Hypnogram.edf"
+        if p.exists() and h.exists():
+            return p, h
+    return None, None
+
+
+def _plot_hypnogram_with_transitions(labels: list[str], events: list) -> go.Figure:
+    """Plot expert hypnogram step curve with transition boundary markers."""
+    n = len(labels)
+    x = list(range(n))
+    y = [STAGE_Y.get(lbl, 0) for lbl in labels]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=x,
+            y=y,
+            mode="lines",
+            name="Expert Hypnogram",
+            line=dict(color="#79c0ff", width=1.8, shape="hv"),
+            hovertemplate="Epoch %{x}: %{text}<extra></extra>",
+            text=labels,
+        )
+    )
+
+    for ev in events:
+        color = "#7ee787" if ev.kind == "N2->N3" else "#f78716"
+        fig.add_vline(
+            x=ev.epoch_index,
+            line_dash="dot",
+            line_color=color,
+            line_width=1.5,
+            annotation_text=f"Ep {ev.epoch_index} ({ev.kind})",
+            annotation_position="top right",
+            annotation_font=dict(size=9, color=color),
+        )
+
+    fig.update_layout(
+        **PLOTLY_BASE,
+        title=dict(
+            text=f"Expert Hypnogram with Detected N2↔N3 Transitions ({len(events)} events)",
+            font=dict(size=13, color="#8b949e"),
+        ),
+        yaxis=dict(
+            tickmode="array",
+            tickvals=list(STAGE_Y.values()),
+            ticktext=list(STAGE_Y.keys()),
+            range=[0.5, 5.5],
+            gridcolor="#21262d",
+            linecolor="#30363d",
+        ),
+        xaxis=dict(
+            title="Epoch Index (30 s / epoch)",
+            gridcolor="#21262d",
+            linecolor="#30363d",
+        ),
+        height=280,
+        showlegend=False,
+    )
+    return fig
+
+
+def _plot_transition_waveforms(fpz_seg, pz_seg) -> go.Figure:
+    """Plot real EEG waveforms (-60s to +60s) centered at transition boundary."""
+    step = 2  # Downsample to 50 Hz for fast responsive Plotly rendering
+    t = fpz_seg.time_s[::step]
+    fpz_y = fpz_seg.signal_uv[::step]
+    pz_y = pz_seg.signal_uv[::step]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=t,
+            y=fpz_y,
+            mode="lines",
+            name="EEG Fpz-Cz (µV)",
+            line=dict(color="#79c0ff", width=1.0),
+            hovertemplate="t=%{x:.2f}s: %{y:.1f} µV<extra>Fpz-Cz</extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=t,
+            y=pz_y,
+            mode="lines",
+            name="EEG Pz-Oz (µV)",
+            line=dict(color="#7ee787", width=1.0),
+            hovertemplate="t=%{x:.2f}s: %{y:.1f} µV<extra>Pz-Oz</extra>",
+        )
+    )
+
+    # Vertical transition boundary line at t = 0
+    fig.add_vline(
+        x=0,
+        line_dash="dash",
+        line_color="#f78716",
+        line_width=2.0,
+        annotation_text="Transition Boundary (0 s)",
+        annotation_position="top",
+        annotation_font=dict(color="#f78716", size=11),
+    )
+
+    # Shaded backgrounds for Pre-transition and Post-transition
+    fig.add_vrect(
+        x0=-60, x1=0,
+        fillcolor="#388bfd", opacity=0.04,
+        layer="below", line_width=0,
+    )
+    fig.add_vrect(
+        x0=0, x1=60,
+        fillcolor="#a371f7", opacity=0.04,
+        layer="below", line_width=0,
+    )
+
+    fig.update_layout(
+        **PLOTLY_BASE,
+        title=dict(
+            text="Raw EEG Signals Around Transition Boundary (±60 s window, calibrated µV)",
+            font=dict(size=13, color="#8b949e"),
+        ),
+        xaxis=dict(
+            title="Time Relative to Transition Boundary (seconds)",
+            gridcolor="#21262d",
+            linecolor="#30363d",
+            range=[-60, 60],
+        ),
+        yaxis=dict(
+            title="Amplitude (µV)",
+            gridcolor="#21262d",
+            linecolor="#30363d",
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="#161b22",
+            bordercolor="#21262d",
+            borderwidth=1,
+        ),
+        height=320,
+    )
+    return fig
+
+
+def _plot_spectral_trajectory(fpz_windows, pz_windows, kind: str) -> go.Figure:
+    """Plot slow-wave (0.5-2.0 Hz) power trajectory across the 23 sliding windows."""
+    t_fpz = [w.relative_center_s for w in fpz_windows]
+    p_fpz = [w.power_db_uv2 for w in fpz_windows]
+    u_fpz = [w.power_uv2 for w in fpz_windows]
+
+    t_pz = [w.relative_center_s for w in pz_windows]
+    p_pz = [w.power_db_uv2 for w in pz_windows]
+    u_pz = [w.power_uv2 for w in pz_windows]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=t_fpz,
+            y=p_fpz,
+            mode="lines+markers",
+            name="EEG Fpz-Cz",
+            line=dict(color="#79c0ff", width=2.5),
+            marker=dict(size=7, color="#79c0ff"),
+            customdata=u_fpz,
+            hovertemplate="t=%{x:+.1f}s: %{y:.2f} dB (%{customdata:.1f} µV²)<extra>Fpz-Cz</extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=t_pz,
+            y=p_pz,
+            mode="lines+markers",
+            name="EEG Pz-Oz",
+            line=dict(color="#7ee787", width=2.5),
+            marker=dict(size=7, color="#7ee787"),
+            customdata=u_pz,
+            hovertemplate="t=%{x:+.1f}s: %{y:.2f} dB (%{customdata:.1f} µV²)<extra>Pz-Oz</extra>",
+        )
+    )
+
+    # Vertical transition boundary line at t = 0
+    fig.add_vline(
+        x=0,
+        line_dash="dash",
+        line_color="#f78716",
+        line_width=2.0,
+        annotation_text="Boundary (0 s)",
+        annotation_position="top",
+        annotation_font=dict(color="#f78716", size=11),
+    )
+
+    fig.update_layout(
+        **PLOTLY_BASE,
+        title=dict(
+            text=f"Slow-Wave (0.5–2.0 Hz) Power Trajectory ({kind}) — 23 Sliding Windows (10s window, 5s step)",
+            font=dict(size=13, color="#8b949e"),
+        ),
+        xaxis=dict(
+            title="Time Relative to Boundary (seconds)",
+            gridcolor="#21262d",
+            linecolor="#30363d",
+            tickvals=[-55, -45, -35, -25, -15, -5, 0, 5, 15, 25, 35, 45, 55],
+        ),
+        yaxis=dict(
+            title="Slow-Wave Power (dB re 1 µV²)",
+            gridcolor="#21262d",
+            linecolor="#30363d",
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="#161b22",
+            bordercolor="#21262d",
+            borderwidth=1,
+        ),
+        height=320,
+    )
+    return fig
+
+
 def _run_transition_explorer(params: dict) -> None:
     """Run Transition Explorer mode for EEG analysis."""
     _section_header(
@@ -1704,260 +1941,255 @@ def _run_transition_explorer(params: dict) -> None:
 
     st.markdown(
         '<div style="color:#8b949e;font-size:0.81rem;margin-bottom:1rem;">'
-        'Analyze N2↔N3 transitions in real Sleep-EDF recordings. '
-        'This is exploratory research, not clinical diagnosis.</div>',
+        'Quantitative analysis of EEG electrophysiological changes around expert-scored N2↔N3 sleep-stage transitions. '
+        'Exploratory scientific research prototype reproducing the E1 pilot protocol.</div>',
         unsafe_allow_html=True,
     )
 
     st.warning(
-        "⚠️ EXPLORATORY RESEARCH MODE ONLY. "
-        "Do not use for clinical diagnosis. "
-        "This is a research prototype for studying EEG spectral changes at sleep-stage transitions."
+        "⚠️ EXPLORATORY RESEARCH PROTOTYPE ONLY. "
+        "Not for clinical diagnosis. "
+        "Participant SC4001 was part of model development/training; results demonstrate E1 reproducibility, not external validation."
     )
 
-    psg_file = st.file_uploader(
-        "Upload PSG EDF",
-        type=["edf"],
-        key="transition_psg_upload",
+    sc4001_psg, sc4001_hyp = _find_sc4001_demo_paths()
+    demo_available = (sc4001_psg is not None and sc4001_hyp is not None)
+
+    source_options = ["Pre-configured SC4001 Pilot (Fast Demo)", "Upload Custom EDF Files"] if demo_available else ["Upload Custom EDF Files"]
+    data_source = st.radio(
+        "Data Source Selection",
+        options=source_options,
+        index=0,
+        horizontal=True,
     )
 
-    hypnogram_file = st.file_uploader(
-        "Upload Hypnogram EDF",
-        type=["edf"],
-        key="transition_hypnogram_upload",
-    )
+    psg_path_to_use = None
+    hyp_path_to_use = None
+    upload_sig = None
 
-    if psg_file is None:
-        st.info("Upload a PSG EDF file and its corresponding hypnogram to begin.")
-        return
+    if data_source == "Pre-configured SC4001 Pilot (Fast Demo)":
+        st.success(f"✓ Found local SC4001 pilot recording: `{sc4001_psg.name}` & `{sc4001_hyp.name}`")
+        psg_path_to_use = str(sc4001_psg)
+        hyp_path_to_use = str(sc4001_hyp)
+        upload_sig = "DEMO_SC4001_LOCAL"
+    else:
+        c_up1, c_up2 = st.columns(2)
+        with c_up1:
+            psg_file = st.file_uploader(
+                "Upload PSG EDF",
+                type=["edf"],
+                key="transition_psg_upload",
+            )
+        with c_up2:
+            hypnogram_file = st.file_uploader(
+                "Upload Hypnogram EDF",
+                type=["edf"],
+                key="transition_hypnogram_upload",
+            )
+        if psg_file is not None and hypnogram_file is not None:
+            upload_sig = f"{psg_file.name}:{psg_file.size}:{hypnogram_file.name}"
+            if st.session_state.get("transition_upload_sig") != upload_sig:
+                for old_tmp in (st.session_state.get("temp_psg_path"), st.session_state.get("temp_hyp_path")):
+                    if old_tmp and os.path.exists(old_tmp):
+                        try:
+                            os.remove(old_tmp)
+                        except Exception:
+                            pass
+                st.session_state["temp_psg_path"] = _save_uploaded_edf(psg_file, ".edf")
+                st.session_state["temp_hyp_path"] = _save_uploaded_edf(hypnogram_file, ".edf")
+                st.session_state["transition_upload_sig"] = upload_sig
+            psg_path_to_use = st.session_state.get("temp_psg_path")
+            hyp_path_to_use = st.session_state.get("temp_hyp_path")
+        else:
+            st.info("Upload both a PSG EDF file and its corresponding hypnogram EDF to begin.")
+            return
 
-    upload_signature = f"{psg_file.name}:{psg_file.size}"
-
-    # Transition direction selection
-    transition_kind = st.selectbox(
-        "Transition Direction",
-        options=["N2->N3", "N3->N2", "BOTH"],
-        index=2,
-    )
-
-    # Stability criterion
-    k_value = st.selectbox(
-        "Stability Criterion (k)",
-        options=[1, 2, 3, 5],
-        index=2,
-        help="Number of consecutive epochs required before and after the boundary."
-    )
+    # Transition direction & stability parameters
+    col_k1, col_k2 = st.columns(2)
+    with col_k1:
+        transition_kind = st.selectbox(
+            "Transition Direction",
+            options=["BOTH", "N2->N3", "N3->N2"],
+            index=0,
+            help="Filter for N2->N3 (deepening sleep), N3->N2 (lightening sleep), or BOTH."
+        )
+    with col_k2:
+        k_value = st.selectbox(
+            "Stability Criterion (k)",
+            options=[3, 1, 2, 5],
+            index=0,
+            help="Number of consecutive 30-second epochs required before and after boundary."
+        )
 
     if st.button("▶  Detect Transitions", type="primary"):
-        psg_path = None
-        hypnogram_path = None
-
         try:
             import mne
+            with st.spinner("Loading PSG recording and hypnogram annotations…"):
+                raw = mne.io.read_raw_edf(psg_path_to_use, preload=False, verbose="ERROR")
+                annotations = mne.read_annotations(hyp_path_to_use)
 
-            psg_path = _save_uploaded_edf(psg_file, ".edf")
-
-            with st.spinner("Loading PSG and hypnogram…"):
-                raw = mne.io.read_raw_edf(psg_path, preload=False, verbose="ERROR")
-
-            # Load hypnogram
-            if hypnogram_file is not None:
-                hypnogram_path = _save_uploaded_edf(hypnogram_file, ".edf")
-                annotations = mne.read_annotations(hypnogram_path)
-                st.success(f"Hypnogram loaded: {len(annotations)} segments.")
-            else:
-                st.error("Hypnogram EDF is required for transition detection.")
-                return
-
-            # Extract labels from annotations
             from core.feature_extraction import _labels_from_annotations
-
-            n_epochs = int(raw.n_times / raw.info["sfreq"] // 30)
+            sfreq = float(raw.info["sfreq"])
+            n_epochs = int(raw.n_times / sfreq // 30)
             labels = _labels_from_annotations(annotations, n_epochs, _CFG.epoch_length_sec)
 
-            if labels is None:
-                st.error("Could not extract valid labels from hypnogram.")
+            if labels is None or len(labels) == 0:
+                st.error("Could not extract valid stage labels from hypnogram annotations.")
                 return
 
-            # Detect transitions
-            with st.spinner("Detecting transitions…"):
-                events = detect_transitions(labels, _CFG.epoch_length_sec, k=k_value)
-
-            # Filter by kind
-            filtered_events = filter_transitions_by_kind(events, transition_kind)
+            with st.spinner(f"Detecting transitions with k={k_value}…"):
+                all_events = detect_transitions(labels, _CFG.epoch_length_sec, k=k_value)
+                filtered_events = filter_transitions_by_kind(all_events, transition_kind)
 
             st.session_state["transition_events"] = filtered_events
-            st.session_state["transition_raw"] = raw
+            st.session_state["transition_all_events"] = all_events
             st.session_state["transition_labels"] = labels
-            st.session_state["transition_upload_signature"] = upload_signature
+            st.session_state["transition_psg_path"] = psg_path_to_use
+            st.session_state["transition_hyp_path"] = hyp_path_to_use
+            st.session_state["transition_sfreq"] = sfreq
+            st.session_state["transition_n_epochs"] = n_epochs
+            st.session_state["transition_upload_signature"] = upload_sig
             st.session_state["transition_kind"] = transition_kind
             st.session_state["transition_k"] = k_value
+
+            # Clear any previously selected event analysis
+            for k in ["fpz_windows", "pz_windows", "fpz_segment", "pz_segment", "analyzed_event_id"]:
+                st.session_state.pop(k, None)
+
+            st.success(f"Successfully detected {len(filtered_events)} transitions ({transition_kind}, k={k_value})!")
 
         except Exception as exc:
             st.error(f"Transition detection error: {exc}")
             import traceback
             st.error(traceback.format_exc())
 
-        finally:
-            for tmp_path in (psg_path, hypnogram_path):
-                if tmp_path:
-                    try:
-                        os.remove(tmp_path)
-                    except Exception:
-                        pass
-
-    # Display results
+    # If results are in session state and signature matches:
     if (
         "transition_events" in st.session_state
-        and st.session_state.get("transition_upload_signature") == upload_signature
+        and st.session_state.get("transition_upload_signature") == upload_sig
     ):
         events = st.session_state["transition_events"]
-        raw = st.session_state["transition_raw"]
+        all_events = st.session_state.get("transition_all_events", events)
         labels = st.session_state["transition_labels"]
-        transition_kind = st.session_state["transition_kind"]
-        k_value = st.session_state["transition_k"]
+        psg_path = st.session_state["transition_psg_path"]
+        sfreq = st.session_state["transition_sfreq"]
+        n_epochs = st.session_state["transition_n_epochs"]
+        t_kind = st.session_state["transition_kind"]
+        k_val = st.session_state["transition_k"]
 
-        _section_header("Transition Detection Results")
+        _section_header("1. Recording Overview & Hypnogram")
 
         counts = {
-            "N2->N3": sum(1 for e in events if e.kind == "N2->N3"),
-            "N3->N2": sum(1 for e in events if e.kind == "N3->N2"),
-            "BOTH": len(events),
+            "N2->N3": sum(1 for e in all_events if e.kind == "N2->N3"),
+            "N3->N2": sum(1 for e in all_events if e.kind == "N3->N2"),
+            "BOTH": len(all_events),
         }
 
-        c1, c2, c3 = st.columns(3)
-
-        c1.markdown(
-            _card(
-                f"{transition_kind} Transitions",
-                str(counts[transition_kind]),
-                f"k={k_value} criterion",
-                "#d2a8ff",
-            ),
-            unsafe_allow_html=True,
-        )
-
-        c2.markdown(
-            _card(
-                "Total Detected",
-                str(counts["BOTH"]),
-                f"Across recording",
-                "#a371f7",
-            ),
-            unsafe_allow_html=True,
-        )
-
-        c3.markdown(
-            _card(
-                "N2→N3",
-                str(counts["N2->N3"]),
-                f"N3→N2: {counts['N3->N2']}",
-                "#7ee787",
-            ),
-            unsafe_allow_html=True,
-        )
+        m1, m2, m3, m4 = st.columns(4)
+        m1.markdown(_card("Total Epochs", f"{n_epochs:,}", f"{n_epochs*30/3600:.1f} hours recording", "#79c0ff"), unsafe_allow_html=True)
+        m2.markdown(_card("N2→N3 Events", str(counts["N2->N3"]), f"k={k_val} stability", "#7ee787"), unsafe_allow_html=True)
+        m3.markdown(_card("N3→N2 Events", str(counts["N3->N2"]), f"k={k_val} stability", "#f78716"), unsafe_allow_html=True)
+        m4.markdown(_card("Total Transitions", str(counts["BOTH"]), f"All k={k_val} events", "#d2a8ff"), unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # Plot hypnogram with transition markers
+        fig_hyp = _plot_hypnogram_with_transitions(labels, all_events)
+        st.plotly_chart(fig_hyp, use_container_width=True)
+
+        # Table of detected transitions
+        _section_header("2. Detected Transitions Table")
+        t_rows = []
+        for idx, ev in enumerate(events):
+            mins = int(ev.boundary_seconds // 60)
+            secs = int(ev.boundary_seconds % 60)
+            hrs = mins // 60
+            mins = mins % 60
+            t_rows.append({
+                "Event #": idx + 1,
+                "Type": ev.kind,
+                "Epoch": ev.epoch_index,
+                "Boundary (s)": f"{ev.boundary_seconds:.1f}",
+                "Time (hh:mm:ss)": f"{hrs:02d}:{mins:02d}:{secs:02d}",
+                "Stability (k)": ev.k,
+                "Before Stage": ev.before_stage,
+                "After Stage": ev.after_stage,
+            })
+        df_events = pd.DataFrame(t_rows)
+        st.dataframe(df_events, use_container_width=True, hide_index=True)
+
         if not events:
-            st.info(f"No {transition_kind} transitions detected with k={k_value} criterion.")
+            st.info(f"No {t_kind} transitions detected with k={k_val} criterion.")
             return
 
-        # Event selection
-        _section_header("Select Transition Event")
+        # Event selection for waveform & spectral analysis
+        _section_header("3. Detailed Transition Waveform & Spectral Analysis")
 
         event_options = [
-            f"Epoch {e.epoch_index} ({e.kind}) at {e.boundary_seconds:.0f}s"
-            for e in events
+            f"Event #{i+1}: Epoch {e.epoch_index} ({e.kind}) at {e.boundary_seconds:.0f}s ({e.before_stage} → {e.after_stage})"
+            for i, e in enumerate(events)
         ]
 
         selected_idx = st.selectbox(
-            "Select event to analyze",
+            "Select transition event to analyze",
             range(len(event_options)),
             format_func=lambda x: event_options[x],
+            key="selected_transition_event_idx"
         )
-
         selected_event = events[selected_idx]
 
-        # Display selected event details
-        st.info(
-            f"Selected: Epoch {selected_event.epoch_index}, {selected_event.kind} at {selected_event.boundary_seconds:.0f}s "
-            f"({selected_event.before_stage} → {selected_event.after_stage})"
-        )
+        if st.button("▶  Analyze Event Waveforms & Spectrum", type="primary"):
+            with st.spinner("Extracting EEG waveforms & computing 0.5–2.0 Hz Welch PSD…"):
+                import mne
+                raw = mne.io.read_raw_edf(psg_path, preload=False, verbose="ERROR")
+                b_sample = int(selected_event.boundary_seconds * raw.info["sfreq"])
 
-        # Spectral analysis button
-        if st.button("▶  Analyze EEG Spectral Power", type="primary"):
-            with st.spinner("Computing spectral analysis…"):
-                event_boundary_sample = int(selected_event.boundary_seconds * raw.info["sfreq"])
+                fpz_seg = extract_eeg_segment(raw, "Fpz-Cz", b_sample, (-60.0, 60.0))
+                fpz_windows = compute_spectral_windows(fpz_seg.signal_uv, fpz_seg.sfreq)
+                fpz_ba = compute_before_after_power(fpz_windows)
 
-                # Analyze Fpz-Cz
-                try:
-                    fpz_segment = extract_eeg_segment(
-                        raw,
-                        "Fpz-Cz",
-                        event_boundary_sample,
-                        (-60.0, 60.0),
-                    )
+                pz_seg = extract_eeg_segment(raw, "Pz-Oz", b_sample, (-60.0, 60.0))
+                pz_windows = compute_spectral_windows(pz_seg.signal_uv, pz_seg.sfreq)
+                pz_ba = compute_before_after_power(pz_windows)
 
-                    fpz_windows = compute_spectral_windows(
-                        fpz_segment.signal_uv,
-                        fpz_segment.sfreq,
-                        event_boundary_sample,
-                    )
+                st.session_state["fpz_segment"] = fpz_seg
+                st.session_state["pz_segment"] = pz_seg
+                st.session_state["fpz_windows"] = fpz_windows
+                st.session_state["pz_windows"] = pz_windows
+                st.session_state["fpz_before_after"] = fpz_ba
+                st.session_state["pz_before_after"] = pz_ba
+                st.session_state["analyzed_event_id"] = f"{selected_event.epoch_index}_{selected_event.boundary_seconds}"
+                st.session_state["current_analyzed_event"] = selected_event
 
-                    fpz_before_after = compute_before_after_power(fpz_windows)
+        if (
+            "fpz_windows" in st.session_state
+            and st.session_state.get("analyzed_event_id") == f"{selected_event.epoch_index}_{selected_event.boundary_seconds}"
+        ):
+            fpz_seg = st.session_state["fpz_segment"]
+            pz_seg = st.session_state["pz_segment"]
+            fpz_windows = st.session_state["fpz_windows"]
+            pz_windows = st.session_state["pz_windows"]
+            fpz_ba = st.session_state["fpz_before_after"]
+            pz_ba = st.session_state["pz_before_after"]
 
-                    st.session_state["fpz_windows"] = fpz_windows
-                    st.session_state["fpz_before_after"] = fpz_before_after
-                except Exception as exc:
-                    st.error(f"Fpz-Cz analysis error: {exc}")
+            # Display Before/After Contrast Cards
+            _section_header(f"Slow-Wave (0.5–2 Hz) Contrast: Epoch {selected_event.epoch_index} ({selected_event.kind})")
 
-                # Analyze Pz-Oz
-                try:
-                    pz_segment = extract_eeg_segment(
-                        raw,
-                        "Pz-Oz",
-                        event_boundary_sample,
-                        (-60.0, 60.0),
-                    )
-
-                    pz_windows = compute_spectral_windows(
-                        pz_segment.signal_uv,
-                        pz_segment.sfreq,
-                        event_boundary_sample,
-                    )
-
-                    pz_before_after = compute_before_after_power(pz_windows)
-
-                    st.session_state["pz_windows"] = pz_windows
-                    st.session_state["pz_before_after"] = pz_before_after
-                except Exception as exc:
-                    st.error(f"Pz-Oz analysis error: {exc}")
-
-        # Display spectral results
-        if "fpz_windows" in st.session_state:
-            _section_header("Spectral Power Analysis (0.5-2 Hz)")
-
-            fpz_before_after = st.session_state["fpz_before_after"]
-            pz_before_after = st.session_state["pz_before_after"]
-
-            s1, s2 = st.columns(2)
-
-            s1.markdown(
+            c_fpz, c_pz = st.columns(2)
+            c_fpz.markdown(
                 _card(
-                    "Fpz-Cz Before",
-                    f"{fpz_before_after['before_power_db']:.2f} dB",
-                    f"After: {fpz_before_after['after_power_db']:.2f} dB",
+                    "EEG Fpz-Cz Power Contrast",
+                    f"{fpz_ba['power_change_db']:+.2f} dB",
+                    f"Before: {fpz_ba['before_power_db']:.2f} dB → After: {fpz_ba['after_power_db']:.2f} dB",
                     "#79c0ff",
                 ),
                 unsafe_allow_html=True,
             )
-
-            s2.markdown(
+            c_pz.markdown(
                 _card(
-                    "Pz-Oz Before",
-                    f"{pz_before_after['before_power_db']:.2f} dB",
-                    f"After: {pz_before_after['after_power_db']:.2f} dB",
+                    "EEG Pz-Oz Power Contrast",
+                    f"{pz_ba['power_change_db']:+.2f} dB",
+                    f"Before: {pz_ba['before_power_db']:.2f} dB → After: {pz_ba['after_power_db']:.2f} dB",
                     "#7ee787",
                 ),
                 unsafe_allow_html=True,
@@ -1965,83 +2197,54 @@ def _run_transition_explorer(params: dict) -> None:
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            st.markdown(
-                f"**Power Change:** Fpz-Cz: {fpz_before_after['power_change_db']:+.2f} dB, "
-                f"Pz-Oz: {pz_before_after['power_change_db']:+.2f} dB"
+            # 1. EEG WAVEFORM PLOT (-60s to +60s)
+            st.markdown("#### Real EEG Waveforms (±60 s Centered at Transition Boundary)")
+            fig_wave = _plot_transition_waveforms(fpz_seg, pz_seg)
+            st.plotly_chart(fig_wave, use_container_width=True)
+
+            # 2. SPECTRAL POWER TRAJECTORY CURVE (23 windows)
+            st.markdown("#### Slow-Wave (0.5–2.0 Hz) Power Trajectory Across 23 Sliding Windows")
+            fig_spec = _plot_spectral_trajectory(fpz_windows, pz_windows, selected_event.kind)
+            st.plotly_chart(fig_spec, use_container_width=True)
+
+            # 3. QUANTITATIVE SPECTRAL WINDOWS TABLE
+            st.markdown("#### Window-by-Window Measurements (E1 Reproduction)")
+            spec_rows = []
+            for i in range(len(fpz_windows)):
+                fw = fpz_windows[i]
+                pw = pz_windows[i]
+                spec_rows.append({
+                    "Win #": i + 1,
+                    "Center (s)": f"{fw.relative_center_s:+.1f}",
+                    "Relative Range": f"[{fw.relative_start_s:+.0f}s, {fw.relative_end_s:+.0f}s]",
+                    "Stage Label": fw.relative_stage_label,
+                    "Fpz-Cz (µV²)": f"{fw.power_uv2:.2f}",
+                    "Fpz-Cz (dB)": f"{fw.power_db_uv2:.2f}",
+                    "Pz-Oz (µV²)": f"{pw.power_uv2:.2f}",
+                    "Pz-Oz (dB)": f"{pw.power_db_uv2:.2f}",
+                    "Fpz QC": "Passed" if not fw.is_flatline and not fw.is_high_amplitude else "Flagged",
+                    "Pz QC": "Passed" if not pw.is_flatline and not pw.is_high_amplitude else "Flagged",
+                })
+            df_spec = pd.DataFrame(spec_rows)
+            st.dataframe(df_spec, use_container_width=True, hide_index=True)
+
+            # CSV Download for this event
+            csv_data = df_spec.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label=f"⬇ Download Spectral Windows CSV (Epoch {selected_event.epoch_index})",
+                data=csv_data,
+                file_name=f"spectral_windows_epoch_{selected_event.epoch_index}_{selected_event.kind}.csv",
+                mime="text/csv",
             )
 
-            # Plot spectral curves
-            _section_header("Spectral Power Curves")
-
-            fpz_windows = st.session_state["fpz_windows"]
-            pz_windows = st.session_state["pz_windows"]
-
-            fpz_times = [w.relative_center_s for w in fpz_windows]
-            fpz_power_db = [w.power_db_uv2 for w in fpz_windows]
-
-            pz_times = [w.relative_center_s for w in pz_windows]
-            pz_power_db = [w.power_db_uv2 for w in pz_windows]
-
-            fig = go.Figure()
-
-            fig.add_trace(
-                go.Scatter(
-                    x=fpz_times,
-                    y=fpz_power_db,
-                    mode="lines",
-                    name="Fpz-Cz",
-                    line=dict(color="#79c0ff", width=2.5),
-                )
-            )
-
-            fig.add_trace(
-                go.Scatter(
-                    x=pz_times,
-                    y=pz_power_db,
-                    mode="lines",
-                    name="Pz-Oz",
-                    line=dict(color="#7ee787", width=2.5),
-                )
-            )
-
-            fig.add_vline(x=0, line_dash="dash", line_color="#f78716", annotation_text="Boundary")
-
-            fig.update_layout(
-                **PLOTLY_BASE,
-                title=dict(
-                    text="Slow-Wave (0.5-2 Hz) Power Around Transition",
-                    font=dict(size=13, color="#8b949e"),
-                ),
-                xaxis=dict(
-                    title="Time relative to boundary (s)",
-                    gridcolor="#21262d",
-                    linecolor="#30363d",
-                ),
-                yaxis=dict(
-                    title="Power (dB re 1µV²)",
-                    gridcolor="#21262d",
-                    linecolor="#30363d",
-                ),
-                legend=dict(
-                    bgcolor="#161b22",
-                    bordercolor="#21262d",
-                    borderwidth=1,
-                ),
-                height=300,
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Disclaimer
+        # Scientific notes & limitations
         st.divider()
         st.warning(
-            "**Methodological Notes:** "
-            f"k={k_value} stability criterion was selected exploratorily after examining E0 annotation counts, not preregistered. "
-            "Stage boundaries are 30-s label boundaries, not precise physiological transition moments. "
-            "SC4001 is a development/training-exposed recording. "
-            "No population inference is justified from a single participant."
+            "**Methodological Notes & Scientific Limitations:**\n"
+            "- **Development Exposure**: Participant SC4001 is part of the development/training set. These findings demonstrate reproducibility of the E1 pilot protocol, NOT independent external validation.\n"
+            "- **Resolution**: Ground truth stage boundaries represent discrete 30-second epoch scoring boundaries rather than instantaneous physiological transitions.\n"
+            "- **Correlation**: Consecutive 10-second spectral windows with 5-second step overlap by 50% and are autocorrelated time series, not independent measurements."
         )
-
 
 
 

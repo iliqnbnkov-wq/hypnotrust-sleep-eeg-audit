@@ -69,11 +69,19 @@ def extract_eeg_segment(
     if actual_channel is None:
         raise ValueError(f"Channel {channel} not found in EDF")
 
-    # Extract signal
-    signal_si = raw.get_data(picks=[actual_channel])[0]
-    signal_segment_si = signal_si[window_start_sample:window_end_sample]
+    # Extract signal efficiently using start/stop to avoid loading full recording
+    read_start = max(0, window_start_sample)
+    read_stop = min(int(raw.n_times), window_end_sample)
+    signal_segment_si = raw.get_data(picks=[actual_channel], start=read_start, stop=read_stop)[0]
 
-    # Convert to microvolts
+    # Handle boundary padding if window exceeds recording bounds
+    if window_start_sample < 0 or window_end_sample > int(raw.n_times):
+        padded = np.zeros(window_end_sample - window_start_sample, dtype=signal_segment_si.dtype)
+        pad_offset = max(0, -window_start_sample)
+        padded[pad_offset:pad_offset + len(signal_segment_si)] = signal_segment_si
+        signal_segment_si = padded
+
+    # Convert to microvolts (MNE raw is in Volts)
     signal_uv = signal_segment_si * 1e6
 
     # Create time axis relative to boundary

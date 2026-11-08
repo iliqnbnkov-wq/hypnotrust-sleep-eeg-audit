@@ -1,0 +1,9 @@
+event_id,hypnogram,psg,subject,night,kind,boundary_seconds,overlap_any,nonoverlap_control,status,reason,clean_windows_Fpz-Cz,clean_windows_Pz-Oz
+SC4001E0-PSG:32250,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,32250.0,False,True,complete,ok,23,23
+SC4001E0-PSG:35790,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,35790.0,False,True,complete,ok,23,23
+SC4001E0-PSG:38760,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,38760.0,False,True,complete,ok,23,23
+SC4001E0-PSG:38910,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N2->N3,38910.0,False,True,complete,ok,23,23
+SC4001E0-PSG:43710,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,43710.0,False,True,complete,ok,23,23
+SC4001E0-PSG:44520,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,44520.0,False,True,complete,ok,23,23
+SC4001E0-PSG:48300,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,48300.0,False,True,complete,ok,23,23
+SC4001E0-PSG:48780,SC4001EC-Hypnogram.edf,SC4001E0-PSG.edf,SC400,1,N3->N2,48780.0,False,True,complete,ok,23,23

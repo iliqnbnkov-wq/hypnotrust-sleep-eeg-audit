@@ -1,0 +1,41 @@
+{
+  "name": "HypnoTrust E1 exploratory spectral pilot",
+  "e0_eligible_k3": 90,
+  "matched_psg": 1,
+  "missing_records": 17,
+  "processed_events": 8,
+  "complete_events": 8,
+  "overlap_flagged_events": 0,
+  "nonoverlap_control_events": 8,
+  "analysis_parameters": {
+    "channels": [
+      "EEG Fpz-Cz",
+      "EEG Pz-Oz"
+    ],
+    "band_hz": [
+      0.5,
+      2.0
+    ],
+    "psd_window_s": 10.0,
+    "window_step_s": 5.0,
+    "welch_segment_s": 4.0,
+    "welch_overlap": 0.5,
+    "event_window_s": [
+      -60.0,
+      60.0
+    ],
+    "main_k": 3,
+    "units": "uV^2; 10log10(uV^2 / 1uV^2)",
+    "qc_peak_to_peak_uv": 500.0,
+    "qc_min_std_uv": 0.5
+  },
+  "limitations": [
+    "Exploratory k=3 was selected after reviewing E0 annotation counts.",
+    "Annotations are R&K scored; N3 combines S3/S4.",
+    "Stage boundaries are 30s label boundaries, not precise physiological transitions.",
+    "EDF hypnogram orig_time=None means absolute time origin cannot independently be verified.",
+    "Overlapping event windows and repeated events per participant are dependent.",
+    "QC thresholds are exploratory and should be sensitivity-tested.",
+    "No population inference is justified with a single participant."
+  ]
+}

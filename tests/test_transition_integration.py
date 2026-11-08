@@ -5,149 +5,177 @@ Tests P0 features:
 - Transition detection with k=3
 - EEG waveform extraction
 - Spectral analysis
-- Reproduction of E1 findings (8 transitions meeting k=3 criterion)
+- Reproduction of E1 findings (8 transitions meeting k=3 criterion: 1 N2->N3, 7 N3->N2)
 """
 
 from __future__ import annotations
 
+import os
 import sys
+import unittest
 from pathlib import Path
 
 import mne
 import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIRECTORY = PROJECT_ROOT / "src"
+
+if str(SRC_DIRECTORY) not in sys.path:
+    sys.path.insert(0, str(SRC_DIRECTORY))
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
-def test_sc4001_transition_detection():
-    """Test transition detection with SC4001."""
-    psg_path = PROJECT_ROOT / "test_files" / "sleep_edf_real" / "physionet-sleep-data" / "SC4001E0-PSG.edf"
-    hypnogram_path = PROJECT_ROOT / "test_files" / "sleep_edf_real" / "physionet-sleep-data" / "SC4001EC-Hypnogram.edf"
+def find_sc4001_files() -> tuple[Path | None, Path | None]:
+    """Locate real SC4001 PSG and hypnogram without committing them to the repository."""
+    candidates = [
+        PROJECT_ROOT / "test_files" / "sleep_edf_real" / "physionet-sleep-data",
+        Path(os.environ.get(
+            "HYPNOTRUST_EDF_DIR",
+            r"C:\Users\User\Documents\Uni\egg_project\test_files\sleep_edf_real\physionet-sleep-data"
+        )),
+        Path(r"C:\Users\User\Documents\Uni\egg_project\test_files\sleep_edf_real\physionet-sleep-data"),
+    ]
+    for d in candidates:
+        p = d / "SC4001E0-PSG.edf"
+        h = d / "SC4001EC-Hypnogram.edf"
+        if p.exists() and h.exists():
+            return p, h
+    return None, None
 
-    if not psg_path.exists() or not hypnogram_path.exists():
-        print("SKIP: SC4001 files not found")
-        return False
 
-    print("=" * 70)
-    print("SC4001 TRANSITION DETECTION TEST")
-    print("=" * 70)
+class TestTransitionIntegrationSC4001(unittest.TestCase):
+    """End-to-end integration tests for Transition Explorer on real SC4001 data."""
 
-    # Load PSG
-    raw = mne.io.read_raw_edf(psg_path, preload=False, verbose="ERROR")
-    print(f"PSG loaded: {raw.n_times} samples, {raw.info['sfreq']} Hz")
+    def setUp(self):
+        self.psg_path, self.hypnogram_path = find_sc4001_files()
+        if self.psg_path is None or self.hypnogram_path is None:
+            self.skipTest("Real SC4001 EDF recordings not present on filesystem.")
 
-    # Load hypnogram
-    annotations = mne.read_annotations(hypnogram_path)
-    print(f"Hypnogram loaded: {len(annotations)} segments")
+    def test_sc4001_transition_detection_and_e1_counts(self):
+        """Test transition detection with k=3 reproduces E1 counts exactly."""
+        raw = mne.io.read_raw_edf(self.psg_path, preload=False, verbose="ERROR")
+        annotations = mne.read_annotations(self.hypnogram_path)
 
-    # Extract labels manually
-    from core.transition_detection import detect_transitions, count_transitions_by_kind
+        from core.feature_extraction import _labels_from_annotations
+        from core.transition_detection import detect_transitions, count_transitions_by_kind
 
-    n_epochs = int(raw.n_times / raw.info["sfreq"] // 30)
-    labels = []
+        n_epochs = int(raw.n_times / raw.info["sfreq"] // 30)
+        labels = _labels_from_annotations(annotations, n_epochs, 30.0)
+        self.assertIsNotNone(labels)
 
-    onsets = np.asarray(annotations.onset, dtype=float)
-    durations = np.asarray(annotations.duration, dtype=float)
-    descriptions = list(annotations.description)
+        # Detect transitions with k=3 stability criterion
+        events_k3 = detect_transitions(labels, 30.0, k=3)
+        counts_k3 = count_transitions_by_kind(events_k3)
 
-    STAGE_DESCRIPTION_MAP = {
-        "Sleep stage W": "Wake",
-        "Sleep stage 1": "N1",
-        "Sleep stage 2": "N2",
-        "Sleep stage 3": "N3",
-        "Sleep stage 4": "N3",
-        "Sleep stage R": "REM",
-        "Sleep stage ?": None,
-        "Movement time": None,
-    }
+        # E1 reference benchmark: 8 transitions (1 N2->N3, 7 N3->N2)
+        self.assertEqual(counts_k3["N2->N3"], 1, "Expected exactly 1 N2->N3 transition")
+        self.assertEqual(counts_k3["N3->N2"], 7, "Expected exactly 7 N3->N2 transitions")
+        self.assertEqual(counts_k3["BOTH"], 8, "Expected exactly 8 total transitions")
 
-    for epoch_index in range(n_epochs):
-        midpoint = epoch_index * 30 + 30 / 2
-        label = None
+        # Verify exact boundary seconds match E1 pilot
+        expected_boundaries = [32250.0, 35790.0, 38760.0, 38910.0, 43710.0, 44520.0, 48300.0, 48780.0]
+        actual_boundaries = [e.boundary_seconds for e in events_k3]
+        self.assertEqual(actual_boundaries, expected_boundaries)
 
-        for onset, duration, description in zip(onsets, durations, descriptions):
-            if onset <= midpoint < onset + duration:
-                label = STAGE_DESCRIPTION_MAP.get(str(description), None)
-                break
+    def test_sc4001_spectral_analysis_matches_e1(self):
+        """Test spectral analysis on SC4001 matches E1 reference values within numerical precision."""
+        raw = mne.io.read_raw_edf(self.psg_path, preload=False, verbose="ERROR")
+        annotations = mne.read_annotations(self.hypnogram_path)
 
-        labels.append(label if label else "Wake")  # Use Wake as placeholder
-
-    print(f"Labels extracted: {len(labels)} epochs")
-
-    # Detect transitions with k=3
-    events_k3 = detect_transitions(labels, 30.0, k=3)
-    counts_k3 = count_transitions_by_kind(events_k3)
-
-    print(f"\nTransitions detected with k=3:")
-    print(f"  N2->N3: {counts_k3['N2->N3']}")
-    print(f"  N3->N2: {counts_k3['N3->N2']}")
-    print(f"  BOTH: {counts_k3['BOTH']}")
-
-    # E1 reference: 8 transitions (1 N2->N3, 7 N3->N2)
-    expected_total = 8
-    if counts_k3["BOTH"] == expected_total:
-        print(f"\n[PASS] Total transitions match E1 reference: {expected_total}")
-    else:
-        print(f"\n[FAIL] Total transitions mismatch: {counts_k3['BOTH']} vs {expected_total}")
-
-    # Test spectral analysis for one event
-    if events_k3:
-        print("\nTesting spectral analysis for first event...")
-        event = events_k3[0]
-
+        from core.feature_extraction import _labels_from_annotations
+        from core.transition_detection import detect_transitions
         from core.eeg_extraction import extract_eeg_segment
         from core.spectral_analysis import compute_spectral_windows, compute_before_after_power
 
-        raw.load_data()
+        n_epochs = int(raw.n_times / raw.info["sfreq"] // 30)
+        labels = _labels_from_annotations(annotations, n_epochs, 30.0)
+        events_k3 = detect_transitions(labels, 30.0, k=3)
+        self.assertTrue(len(events_k3) >= 1)
 
-        event_boundary_sample = int(event.boundary_seconds * raw.info["sfreq"])
+        # Test event 0 (boundary at 32250.0s, N3->N2)
+        ev0 = events_k3[0]
+        self.assertEqual(ev0.boundary_seconds, 32250.0)
+        self.assertEqual(ev0.kind, "N3->N2")
 
-        try:
-            fpz_segment = extract_eeg_segment(
-                raw,
-                "Fpz-Cz",
-                event_boundary_sample,
-                (-60.0, 60.0),
-            )
+        b_sample = int(ev0.boundary_seconds * raw.info["sfreq"])
+        fpz_seg = extract_eeg_segment(raw, "Fpz-Cz", b_sample, (-60.0, 60.0))
+        windows = compute_spectral_windows(fpz_seg.signal_uv, fpz_seg.sfreq)
 
-            # For spectral analysis, we pass the event_boundary_sample from the segment
-            # The segment already has the boundary stored
-            fpz_windows = compute_spectral_windows(
-                fpz_segment.signal_uv,
-                fpz_segment.sfreq,
-                fpz_segment.event_boundary_sample,
-                event_window_s=(-60.0, 60.0),
-                psd_window_s=10.0,
-                window_step_s=5.0,
-                welch_segment_s=4.0,
-                welch_overlap=0.5,
-            )
+        self.assertEqual(len(windows), 23, "Expected 23 sliding windows (-55s to +55s)")
+        self.assertAlmostEqual(windows[0].relative_center_s, -55.0, places=4)
+        self.assertAlmostEqual(windows[-1].relative_center_s, 55.0, places=4)
 
-            fpz_before_after = compute_before_after_power(fpz_windows)
+        # Compare with original E1 reference values for 32250s
+        # First window power_uv2 ~ 741.815, power_db ~ 28.703
+        self.assertAlmostEqual(windows[0].power_uv2, 741.815, places=2)
+        self.assertAlmostEqual(windows[0].power_db_uv2, 28.703, places=2)
 
-            print(f"Fpz-Cz spectral analysis:")
-            print(f"  Before power: {fpz_before_after['before_power_db']:.2f} dB")
-            print(f"  After power: {fpz_before_after['after_power_db']:.2f} dB")
-            print(f"  Power change: {fpz_before_after['power_change_db']:+.2f} dB")
-            print(f"  Windows before: {fpz_before_after['n_before']}")
-            print(f"  Windows after: {fpz_before_after['n_after']}")
+        # Check before/after delta power
+        ba = compute_before_after_power(windows)
+        self.assertAlmostEqual(ba["before_power_db"], 28.21, places=1)
+        self.assertAlmostEqual(ba["after_power_db"], 23.98, places=1)
+        self.assertTrue(ba["power_change_db"] < 0, "Slow-wave power must drop from N3 to N2")
 
-            print("\n[PASS] Spectral analysis completed successfully")
-            return True
+    def test_sc4001_all_368_spectral_windows_reproduce_e1_csv(self):
+        """Verify all 368 spectral windows match frozen results/pilot_e1/e1_spectral_windows.csv."""
+        e1_csv_path = PROJECT_ROOT / "results" / "pilot_e1" / "e1_spectral_windows.csv"
+        if not e1_csv_path.exists():
+            self.skipTest("Frozen reference results/pilot_e1/e1_spectral_windows.csv not found")
 
-        except Exception as exc:
-            print(f"\n[FAIL] Spectral analysis error: {exc}")
-            import traceback
-            traceback.print_exc()
-            return False
-    else:
-        print("\n[FAIL] No transitions detected to test spectral analysis")
-        return False
+        e1_df = pd.read_csv(e1_csv_path)
+        self.assertEqual(len(e1_df), 368, "Expected 368 rows (8 events * 2 channels * 23 windows)")
+
+        raw = mne.io.read_raw_edf(self.psg_path, preload=False, verbose="ERROR")
+        annotations = mne.read_annotations(self.hypnogram_path)
+
+        from core.feature_extraction import _labels_from_annotations
+        from core.transition_detection import detect_transitions
+        from core.eeg_extraction import extract_eeg_segment
+        from core.spectral_analysis import compute_spectral_windows
+
+        n_epochs = int(raw.n_times / raw.info["sfreq"] // 30)
+        labels = _labels_from_annotations(annotations, n_epochs, 30.0)
+        events_k3 = detect_transitions(labels, 30.0, k=3)
+        self.assertEqual(len(events_k3), 8)
+
+        computed_rows = []
+        for ev in events_k3:
+            b_sample = int(ev.boundary_seconds * raw.info["sfreq"])
+            for ch in ["Fpz-Cz", "Pz-Oz"]:
+                ch_name = f"EEG {ch}"
+                seg = extract_eeg_segment(raw, ch, b_sample, (-60.0, 60.0))
+                windows = compute_spectral_windows(seg.signal_uv, seg.sfreq)
+                for w in windows:
+                    computed_rows.append({
+                        "channel": ch_name,
+                        "boundary_seconds": ev.boundary_seconds,
+                        "relative_center_s": w.relative_center_s,
+                        "power_uv2": w.power_uv2,
+                        "power_db_uv2": w.power_db_uv2,
+                    })
+
+        comp_df = pd.DataFrame(computed_rows)
+        self.assertEqual(len(comp_df), 368)
+
+        # Merge and compare
+        merged = pd.merge(
+            comp_df,
+            e1_df,
+            on=["channel", "boundary_seconds", "relative_center_s"],
+            suffixes=("_calc", "_ref"),
+        )
+        self.assertEqual(len(merged), 368)
+
+        max_power_diff = np.max(np.abs(merged["power_uv2_calc"] - merged["power_uv2_ref"]))
+        max_db_diff = np.max(np.abs(merged["power_db_uv2_calc"] - merged["power_db_uv2_ref"]))
+
+        self.assertLess(max_power_diff, 1e-6, f"Max power diff {max_power_diff} exceeds tolerance")
+        self.assertLess(max_db_diff, 1e-6, f"Max dB diff {max_db_diff} exceeds tolerance")
 
 
 if __name__ == "__main__":
-    success = test_sc4001_transition_detection()
-    sys.exit(0 if success else 1)
+    unittest.main()
