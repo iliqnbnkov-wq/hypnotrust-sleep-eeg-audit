@@ -16,7 +16,7 @@ HypnoTrust focuses on the next layer:
 
 > When should we trust the prediction less, and which epochs should be prioritized for human review?
 
-The dashboard does not train or tune models during the demo. It reads frozen prediction outputs from the controlled V5d evaluation workflow.
+During normal operation, the dashboard does not train, calibrate, or tune models. EDF inputs can invoke `core.pipeline.run_full_pipeline` for inference with the existing locked Temporal v2 model. Separate comparison panels read frozen prediction outputs from the public V5d evaluation workflow.
 
 ## What the project demonstrates
 
@@ -47,13 +47,16 @@ The Streamlit app supports the following review flow:
 
 The project keeps model-development and evaluation roles separated. Selected locked/frozen results include:
 
-- Historical locked subject evaluation: accuracy around 0.81-0.83 depending on the evaluation version.
-- External holdout pooled evaluation: accuracy around 0.78.
 - Review queues are enriched for errors compared with the full epoch set.
-- Common failure modes include REM -> N2 and N3 -> N2 behavior.
-- The project explicitly tracks N2-attractor behavior and subject-level variability.
+- The V5d error-pair tables include REM -> N2 and N3 -> N2 among frequent errors.
+- The project reports subject-level variability.
 
-These results are used for inspection and explanation, not for clinical claims.
+Role-specific figures from the public V5d report:
+
+- **Historical locked evaluation:** SC409 (Subject 9), 1,132 epochs; V5d reconstruction accuracy 0.8127. The report compares this with the historical Temporal v2 reference accuracy 0.8313.
+- **V5d external holdout:** SC410-SC419, 10,713 pooled epochs; reported pooled accuracy 0.7752, macro-F1 0.6947, and Cohen's kappa 0.6692.
+
+These are values reported by checked-in artifacts, not results independently reproduced in this checkout session. The historical locked evaluation and external holdout are distinct; neither is clinical validation.
 
 ## What the project does not claim
 
@@ -68,6 +71,10 @@ These results are used for inspection and explanation, not for clinical claims.
 ```text
 app/
   app.py                         Streamlit dashboard
+core/                             EDF-to-prediction application pipeline
+configs/                          Baseline experiment configuration
+results/                          Temporal v2 and calibration artifacts
+research/e1/                      Separate E1 research experiment
 
 src/hypnotrust/
   calibration.py                 Calibration and probability handling
@@ -90,6 +97,10 @@ experiments/
   v5_expanded_cross_subject_evaluation/
     v5d_frozen_external_evaluation/
       frozen CSV/JSON/MD evaluation outputs
+
+.github/                         Copilot instructions and repository Agent Skills
+run_app.ps1                       App launcher (creates environment and installs/updates packages)
+run_tests.ps1                     Test launcher (creates environment and installs/updates packages)
 ```
 
 ## Documentation
@@ -98,57 +109,34 @@ experiments/
 - [Related work](docs/related_work.md)
 - [Evaluation protocol](docs/evaluation_protocol.md)
 - [Model card summary](docs/model_card.md)
+- [V5d frozen external evaluation report](experiments/v5_expanded_cross_subject_evaluation/v5d_frozen_external_evaluation/V5D_FROZEN_EXTERNAL_EVALUATION_REPORT.md)
+- [V5d evaluation configuration](experiments/v5_expanded_cross_subject_evaluation/v5d_frozen_external_evaluation/v5d_eval_config.json)
 
-## Quick start on Windows
+## Windows setup and app
 
-After cloning the repository:
+The app and test PowerShell scripts create `.venv` when needed and install/update packages from `requirements.txt`. To avoid implicit installation, provision dependencies explicitly:
 
 ```powershell
 cd hypnotrust-sleep-eeg-audit
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\run_app.ps1
-```
-
-The launch script creates a local `.venv` if needed, installs packages from `requirements.txt`, sets `PYTHONPATH`, and starts the Streamlit app.
-
-To run the test suite:
-
-```powershell
-.\run_tests.ps1
-```
-
-## Run the app
-
-```powershell
 python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-$env:PYTHONPATH = "$PWD\src"
-.\run_app.ps1
-```
-
-## Run the app
-
-```powershell
+.\.venv\Scripts\python.exe -m pip install -r .\requirements.txt
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\run_app.ps1
+$env:PYTHONPATH = "$PWD;$PWD\src"
+.\.venv\Scripts\python.exe -m streamlit run .\app\app.py
 ```
 
-`run_app.ps1` creates/uses the local `.venv`, installs dependencies from `requirements.txt` if Streamlit is missing, sets `PYTHONPATH`, and launches the Streamlit dashboard.
+Alternatively, `.\run_app.ps1` installs/updates packages automatically before starting the app.
 
-## Run tests
+## Test command
 
 ```powershell
-$env:PYTHONPATH = "$PWD\src"
-python -m unittest discover -s tests -p "test*.py"
+$env:PYTHONPATH = "$PWD;$PWD\src"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test*.py"
 ```
 
-Expected local test status for the current project version:
+Run this only in an already provisioned environment. The command above does not install dependencies; `.\run_tests.ps1` does install/update packages and should not be used when installation is not intended.
 
-```text
-Ran 133 tests
-OK
-```
+The README previously recorded `Ran 133 tests / OK`; this is a repository-reported status, not an independently reproduced result in this checkout session.
 
 ## Limitations
 
@@ -156,7 +144,7 @@ OK
 - The dashboard is an audit and explanation tool, not a clinical system.
 - Confidence is useful for review prioritization, but it is not a guarantee of correctness.
 - Subject-level variability remains important.
-- Failure modes such as N2-attractor behavior require careful interpretation.
+- N2-related error pairs require careful interpretation.
 
 ## Status
 
