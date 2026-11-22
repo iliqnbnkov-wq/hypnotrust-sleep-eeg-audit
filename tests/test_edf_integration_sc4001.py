@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 import mne
+import pytest
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -58,12 +59,10 @@ def test_sc4001_edf_evaluation():
 
     # Skip test if files are not available
     if not psg_path.exists():
-        print(f"SKIP: PSG file not found: {psg_path}")
-        return
+        pytest.skip(f"PSG file not found: {psg_path}")
 
     if not hypnogram_path.exists():
-        print(f"SKIP: Hypnogram file not found: {hypnogram_path}")
-        return
+        pytest.skip(f"Hypnogram file not found: {hypnogram_path}")
 
     print(f"Loading PSG from: {psg_path}")
     print(f"Loading hypnogram from: {hypnogram_path}")

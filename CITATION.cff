@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it as below."
+title: "HypnoTrust: Uncertainty-Aware Review Prioritization for Sleep EEG Staging"
+type: software
+authors:
+  - family-names: "Bankov"
+    given-names: "Iliyan"
+repository-code: "https://github.com/iliqnbnkov-wq/hypnotrust-sleep-eeg-audit"
+abstract: >-
+  Research and educational proof of concept for uncertainty-aware review
+  prioritization of automatic sleep-stage predictions (Sleep-EDF).
+  Not clinically validated; not for clinical use.
+keywords:
+  - sleep staging
+  - EEG
+  - uncertainty
+  - calibration
+  - selective prediction

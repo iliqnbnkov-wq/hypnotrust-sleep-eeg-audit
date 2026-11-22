@@ -1759,6 +1759,13 @@ def _run_transition_explorer(params: dict) -> None:
 
             with st.spinner("Loading PSG and hypnogram…"):
                 raw = mne.io.read_raw_edf(psg_path, preload=False, verbose="ERROR")
+                # The temporary EDF is deleted in the finally block below, but
+                # the Raw object is kept in session_state for later plotting.
+                # Load the needed channels now so later reads do not hit a
+                # deleted file.
+                from core.loader import preload_eeg_channels
+
+                raw = preload_eeg_channels(raw)
 
             # Load hypnogram
             if hypnogram_file is not None:

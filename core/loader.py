@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -63,6 +64,44 @@ def _write_uploaded_file_to_temp_edf(uploaded_file: Any) -> str:
         return tmp.name
 
 
+def _remove_quietly(path: str) -> None:
+    """Remove a temporary file; never raise (best-effort cleanup)."""
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def preload_eeg_channels(
+    raw: mne.io.BaseRaw,
+    channel_keys: tuple[str, ...] = ("Fpz-Cz", "Pz-Oz"),
+) -> mne.io.BaseRaw:
+    """
+    Keep only the channels needed for spectral inspection and load them
+    into memory.
+
+    ``mne.io.read_raw_edf(..., preload=False)`` reads samples lazily from
+    the file path. If the (temporary) EDF file is deleted afterwards, any
+    later ``raw.get_data()`` fails with FileNotFoundError. Preloading the
+    required channels makes the object independent of the file.
+
+    If none of the requested channels is found, all channels are loaded so
+    the downstream code can report its own, specific channel error.
+    """
+
+    keep = [
+        name
+        for name in raw.ch_names
+        if any(key.lower() in name.lower() for key in channel_keys)
+    ]
+
+    if keep:
+        raw.pick(keep)
+
+    raw.load_data()
+    return raw
+
+
 def load_psg_edf(file_or_path: str | Path | Any) -> mne.io.BaseRaw:
     """
     Load PSG EDF recording.
@@ -71,19 +110,25 @@ def load_psg_edf(file_or_path: str | Path | Any) -> mne.io.BaseRaw:
     It does not run prediction, metrics, or tuning.
     """
 
-    if _is_uploaded_file(file_or_path):
-        edf_path = _write_uploaded_file_to_temp_edf(file_or_path)
-    else:
-        edf_path = str(file_or_path)
-
-    raw = mne.io.read_raw_edf(
-        edf_path,
-        preload=True,
-        infer_types=True,
-        verbose=False,
+    is_temp = _is_uploaded_file(file_or_path)
+    edf_path = (
+        _write_uploaded_file_to_temp_edf(file_or_path)
+        if is_temp
+        else str(file_or_path)
     )
 
-    return raw
+    try:
+        # preload=True: the signal is fully in memory, so the temporary
+        # copy of an uploaded file can be removed safely afterwards.
+        return mne.io.read_raw_edf(
+            edf_path,
+            preload=True,
+            infer_types=True,
+            verbose=False,
+        )
+    finally:
+        if is_temp:
+            _remove_quietly(edf_path)
 
 
 def load_hypnogram_edf(file_or_path: str | Path | Any | None) -> mne.Annotations | None:
@@ -97,12 +142,18 @@ def load_hypnogram_edf(file_or_path: str | Path | Any | None) -> mne.Annotations
     if file_or_path is None:
         return None
 
-    if _is_uploaded_file(file_or_path):
-        edf_path = _write_uploaded_file_to_temp_edf(file_or_path)
-    else:
-        edf_path = str(file_or_path)
+    is_temp = _is_uploaded_file(file_or_path)
+    edf_path = (
+        _write_uploaded_file_to_temp_edf(file_or_path)
+        if is_temp
+        else str(file_or_path)
+    )
 
-    return mne.read_annotations(edf_path, verbose=False)
+    try:
+        return mne.read_annotations(edf_path, verbose=False)
+    finally:
+        if is_temp:
+            _remove_quietly(edf_path)
 
 
 def _normalize_channel_name(name: str) -> str:
