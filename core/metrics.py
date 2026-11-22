@@ -159,6 +159,32 @@ def compute_brier_score_multiclass(
     return float(np.mean(np.sum((probabilities_array - y_one_hot) ** 2, axis=1)))
 
 
+def _log_loss_in_stage_order(
+    y_true_array: np.ndarray,
+    probabilities_array: np.ndarray,
+    stage_names: list[str],
+) -> float:
+    """
+    Multiclass log loss with probability columns given in ``stage_names`` order.
+
+    scikit-learn's ``log_loss`` binarizes ``y_true`` in *sorted* label order
+    and expects probability columns in that same order. Passing columns in
+    clinical order (Wake, N1, N2, N3, REM) with ``labels=stage_names`` silently
+    mismatches them, so the columns are reordered to sorted label order first.
+    """
+
+    order = sorted(range(len(stage_names)), key=lambda i: stage_names[i])
+    sorted_labels = [stage_names[i] for i in order]
+
+    return float(
+        log_loss(
+            y_true_array,
+            probabilities_array[:, order],
+            labels=sorted_labels,
+        )
+    )
+
+
 def compute_metrics_if_available(
     y_true: list[str] | np.ndarray | None,
     y_pred: list[str] | np.ndarray,
@@ -215,12 +241,10 @@ def compute_metrics_if_available(
             probabilities_array,
             stage_names,
         ),
-        "log_loss": float(
-            log_loss(
-                y_true_array,
-                probabilities_array,
-                labels=stage_names,
-            )
+        "log_loss": _log_loss_in_stage_order(
+            y_true_array,
+            probabilities_array,
+            stage_names,
         ),
     }
 
