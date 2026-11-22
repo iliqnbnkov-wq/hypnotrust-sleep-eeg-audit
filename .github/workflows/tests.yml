@@ -1,0 +1,37 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Syntax check
+        run: python -m compileall -q app core src tests research
+      - name: Import check
+        run: |
+          python - <<'PY'
+          import core.pipeline, core.review_queue, core.loader
+          import hypnotrust.calibration, hypnotrust.uncertainty, hypnotrust.temporal
+          PY
+        env:
+          PYTHONPATH: .:src
+      - name: Unit tests (no external data, no model training)
+        run: python -m pytest -q
+        env:
+          PYTHONPATH: .:src
