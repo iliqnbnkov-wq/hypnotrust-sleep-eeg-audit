@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import mne
+import pytest
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -28,8 +29,7 @@ def test_sc4001_transition_detection():
     hypnogram_path = PROJECT_ROOT / "test_files" / "sleep_edf_real" / "physionet-sleep-data" / "SC4001EC-Hypnogram.edf"
 
     if not psg_path.exists() or not hypnogram_path.exists():
-        print("SKIP: SC4001 files not found")
-        return False
+        pytest.skip("SC4001 files not found (external data not in repository)")
 
     print("=" * 70)
     print("SC4001 TRANSITION DETECTION TEST")
